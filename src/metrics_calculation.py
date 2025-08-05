@@ -9,6 +9,7 @@ PART 2: METRICS CALCULATION
 import numpy as np
 from sklearn.metrics import precision_recall_fscore_support
 import pandas as pd
+import ast
 
 def calculate_metrics(model_pred_df, genre_list, genre_true_counts, genre_tp_counts, genre_fp_counts):
     '''
@@ -94,4 +95,32 @@ def calculate_sklearn_metrics(model_pred_df, genre_list):
     true_matrix = pd.DataFrame(true_rows)
     '''
 
-    # Your code here
+    pred_rows = []
+    true_rows = []
+
+    # convert stringified list to actual list
+    for _, row in model_pred_df.iterrows():
+        try:
+            true_genres = ast.literal_eval(row['actual genres'])
+        except:
+            true_genres = []
+
+        predicted = row['predicted'].strip() if pd.notna(row['predicted']) else None
+
+        true_row = [1 if genre in true_genres else 0 for genre in genre_list]
+        pred_row = [1 if genre == predicted else 0 for genre in genre_list]
+
+        true_rows.append(true_row)
+        pred_rows.append(pred_row)
+
+    true_matrix = pd.DataFrame(true_rows, columns=genre_list)
+    pred_matrix = pd.DataFrame(pred_rows, columns=genre_list)
+
+    macro_precision, macro_recall, macro_f1, _ = precision_recall_fscore_support(
+        true_matrix, pred_matrix, average='macro', zero_division=0
+    )
+    micro_precision, micro_recall, micro_f1, _ = precision_recall_fscore_support(
+        true_matrix, pred_matrix, average='micro', zero_division=0
+    )
+
+    return macro_precision, macro_recall, macro_f1, micro_precision, micro_recall, micro_f1
