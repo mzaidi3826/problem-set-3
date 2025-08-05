@@ -38,7 +38,40 @@ def calculate_metrics(model_pred_df, genre_list, genre_true_counts, genre_tp_cou
 
     '''
 
-    # Your code here
+    # Micro: global counts
+    total_tp = sum(genre_tp_counts.values())
+    total_fp = sum(genre_fp_counts.values())
+    total_fn = sum(genre_true_counts[g] - genre_tp_counts.get(g, 0) for g in genre_list)
+
+    micro_precision = total_tp / (total_tp + total_fp) if (total_tp + total_fp) > 0 else 0.0
+    micro_recall = total_tp / (total_tp + total_fn) if (total_tp + total_fn) > 0 else 0.0
+    if (micro_precision + micro_recall) > 0:
+        micro_f1 = 2 * micro_precision * micro_recall / (micro_precision + micro_recall)
+    else:
+        micro_f1 = 0.0
+
+    # Macro: per-genre
+    macro_prec_list = []
+    macro_recall_list = []
+    macro_f1_list = []
+
+    for genre in genre_list:
+        tp = genre_tp_counts.get(genre, 0)
+        fp = genre_fp_counts.get(genre, 0)
+        fn = genre_true_counts.get(genre, 0) - tp
+
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+
+        macro_prec_list.append(precision)
+        macro_recall_list.append(recall)
+        macro_f1_list.append(f1)
+
+    return (
+        micro_precision, micro_recall, micro_f1,
+        macro_prec_list, macro_recall_list, macro_f1_list
+    )
 
     
 def calculate_sklearn_metrics(model_pred_df, genre_list):
